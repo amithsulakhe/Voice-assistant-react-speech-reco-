@@ -1,0 +1,38 @@
+{
+  "name": "my-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@openai/agents": "^0.1.9",
+    "@openai/agents-realtime": "^0.1.8",
+    "next": "15.5.5",
+    "openai": "^6.3.0",
+    "openai-agents-js": "^0.1.9",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-idle-timer": "^5.7.2",
+    "react-speech-recognition": "^4.0.1",
+    "react-type-animation": "^3.2.0",
+    "react-use": "^17.6.0",
+    "react-use-websocket": "^4.13.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-speech-recognition": "^3.9.6",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
