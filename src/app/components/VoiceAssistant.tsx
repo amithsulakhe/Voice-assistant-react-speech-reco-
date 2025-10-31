@@ -99,6 +99,8 @@ export default function VoiceAssistant() {
   const [textInput, setTextInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  // Detect mobile to avoid mic conflicts (Android/iOS Chrome restrictions)
+  const [isMobile, setIsMobile] = useState(false);
   
   // React Speech Recognition hook
   const {
@@ -107,6 +109,16 @@ export default function VoiceAssistant() {
     resetTranscript,
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
+
+  // Initialize mobile detection once
+  useEffect(() => {
+    try {
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+      setIsMobile(/Android|iPhone|iPad|iPod/i.test(ua));
+    } catch {
+      setIsMobile(false);
+    }
+  }, []);
 
   // Helper function to notify AI about student actions
   const notifyAI = (activeSession: RealtimeSession, notificationType: string, notificationData?: Record<string, unknown>): void => {
@@ -154,6 +166,10 @@ export default function VoiceAssistant() {
     setError('');
 
     try {
+      // Ensure browser speech recognition is fully stopped before opening WebRTC mic
+      if (listening) {
+        try { SpeechRecognition.stopListening(); } catch {}
+      }
       // Get ephemeral token from backend
       const response = await fetch('/api/get-token', {
         method: 'POST',
@@ -757,6 +773,10 @@ Keep all interactions educational, safe, and respectful.
     }
 
     try {
+      // Stop Web Speech recognition to avoid mic contention
+      if (listening) {
+        try { SpeechRecognition.stopListening(); } catch {}
+      }
       // Use the correct mute API - false means unmuted (listening)
       (session as RealtimeEventHandlers).mute(false);
       setIsListening(true);
@@ -867,9 +887,21 @@ Keep all interactions educational, safe, and respectful.
   }, [speechTranscript]);
 
   const startSpeechRecognition = (): void => {
+    // On mobile while connected to realtime, block Web Speech to prevent mic clash
+    if (isMobile && isConnected) {
+      setError('On mobile, use the Unmute button for voice. The Voice button is disabled while connected to avoid microphone conflicts.');
+      return;
+    }
     if (!listening && browserSupportsSpeechRecognition) {
       try {
         setError('');
+        // If realtime session is present, ensure it is muted before starting Web Speech
+        if (session) {
+          try {
+            (session as RealtimeEventHandlers).mute(true);
+            setIsListening(false);
+          } catch {}
+        }
         resetTranscript();
         SpeechRecognition.startListening({ continuous: false, language: 'en-US' });
         console.log('Speech recognition started');
@@ -1355,7 +1387,7 @@ Keep all interactions educational, safe, and respectful.
                 />
                 
                 {/* Microphone Button */}
-                {browserSupportsSpeechRecognition && (
+                {browserSupportsSpeechRecognition && !(isMobile && isConnected) && (
                   <button
                     onClick={listening ? stopSpeechRecognition : startSpeechRecognition}
                     disabled={isSending}
@@ -1377,6 +1409,16 @@ Keep all interactions educational, safe, and respectful.
                         Voice
                       </>
                     )}
+                  </button>
+                )}
+                {browserSupportsSpeechRecognition && isMobile && isConnected && (
+                  <button
+                    disabled
+                    className="px-4 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 disabled:bg-gray-400 disabled:text-white disabled:cursor-not-allowed"
+                    title="On mobile, use the Unmute button for voice while connected"
+                  >
+                    <span>🎤</span>
+                    Voice
                   </button>
                 )}
                 
@@ -1402,9 +1444,14 @@ Keep all interactions educational, safe, and respectful.
               {/* Help Text */}
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 <p>Type your question and press Enter or click Send to ask the AI tutor.</p>
-                {browserSupportsSpeechRecognition && (
+                {browserSupportsSpeechRecognition && !isMobile && (
                   <p className="mt-1 text-green-600 dark:text-green-400">
                     🎤 Click the Voice button to speak your question instead of typing!
+                  </p>
+                )}
+                {browserSupportsSpeechRecognition && isMobile && (
+                  <p className="mt-1 text-orange-600 dark:text-orange-400">
+                    📱 On mobile while connected, use the big Unmute button to speak. The small Voice button is disabled to avoid microphone conflicts.
                   </p>
                 )}
                 <p className="mt-1 text-blue-600 dark:text-blue-400">
