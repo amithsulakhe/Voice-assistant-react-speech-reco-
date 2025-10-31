@@ -773,6 +773,11 @@ Keep all interactions educational, safe, and respectful.
     }
 
     try {
+      // On mobile, we avoid opening the Realtime microphone. Use the Voice button instead.
+      if (isMobile) {
+        setError('On mobile, use the Voice button to dictate, then press Send.');
+        return;
+      }
       // Stop Web Speech recognition to avoid mic contention
       if (listening) {
         try { SpeechRecognition.stopListening(); } catch {}
@@ -887,11 +892,6 @@ Keep all interactions educational, safe, and respectful.
   }, [speechTranscript]);
 
   const startSpeechRecognition = (): void => {
-    // On mobile while connected to realtime, block Web Speech to prevent mic clash
-    if (isMobile && isConnected) {
-      setError('On mobile, use the Unmute button for voice. The Voice button is disabled while connected to avoid microphone conflicts.');
-      return;
-    }
     if (!listening && browserSupportsSpeechRecognition) {
       try {
         setError('');
@@ -1247,13 +1247,16 @@ Keep all interactions educational, safe, and respectful.
             <div className="flex gap-4 items-center justify-center">
               <button
                 onClick={isListening ? stopListening : startListening}
+                disabled={isMobile}
                 className={`px-8 py-4 rounded-full text-white font-semibold text-lg transition-all ${
-                  isListening
-                    ? 'bg-red-600 hover:bg-red-700 animate-pulse'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                  isMobile
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : isListening
+                      ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+                      : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {isListening ? '⏹ Mute' : '🎤 Unmute'}
+                {isMobile ? '🎤 Realtime mic unavailable on mobile' : (isListening ? '⏹ Mute' : '🎤 Unmute')}
               </button>
             </div>
             
@@ -1354,7 +1357,7 @@ Keep all interactions educational, safe, and respectful.
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
                   <span className="text-lg">🔇</span>
                   <p className="text-sm text-gray-700 dark:text-gray-400 font-medium">
-                    Muted - Click unmute to start
+                    {isMobile ? 'Mobile: Use the Voice button to dictate, then press Send' : 'Muted - Click unmute to start'}
                   </p>
                 </div>
               )}
@@ -1387,7 +1390,7 @@ Keep all interactions educational, safe, and respectful.
                 />
                 
                 {/* Microphone Button */}
-                {browserSupportsSpeechRecognition && !(isMobile && isConnected) && (
+                {browserSupportsSpeechRecognition && (
                   <button
                     onClick={listening ? stopSpeechRecognition : startSpeechRecognition}
                     disabled={isSending}
@@ -1409,16 +1412,6 @@ Keep all interactions educational, safe, and respectful.
                         Voice
                       </>
                     )}
-                  </button>
-                )}
-                {browserSupportsSpeechRecognition && isMobile && isConnected && (
-                  <button
-                    disabled
-                    className="px-4 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 disabled:bg-gray-400 disabled:text-white disabled:cursor-not-allowed"
-                    title="On mobile, use the Unmute button for voice while connected"
-                  >
-                    <span>🎤</span>
-                    Voice
                   </button>
                 )}
                 
@@ -1444,14 +1437,9 @@ Keep all interactions educational, safe, and respectful.
               {/* Help Text */}
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 <p>Type your question and press Enter or click Send to ask the AI tutor.</p>
-                {browserSupportsSpeechRecognition && !isMobile && (
+                {browserSupportsSpeechRecognition && (
                   <p className="mt-1 text-green-600 dark:text-green-400">
-                    🎤 Click the Voice button to speak your question instead of typing!
-                  </p>
-                )}
-                {browserSupportsSpeechRecognition && isMobile && (
-                  <p className="mt-1 text-orange-600 dark:text-orange-400">
-                    📱 On mobile while connected, use the big Unmute button to speak. The small Voice button is disabled to avoid microphone conflicts.
+                    🎤 Speak with the Voice button, then press Send to submit.
                   </p>
                 )}
                 <p className="mt-1 text-blue-600 dark:text-blue-400">
